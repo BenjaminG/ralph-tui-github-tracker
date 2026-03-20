@@ -12,7 +12,7 @@
     }
   },
   "scripts": {
-    "build": "bun build src/index.ts --outdir dist --target node --format esm --external ralph-tui && bun run build:types",
+    "build": "bun build src/index.ts --outdir dist --target node --format esm && bun run build:types",
     "build:types": "tsc --emitDeclarationOnly",
     "typecheck": "tsc --noEmit",
     "test": "bun test",

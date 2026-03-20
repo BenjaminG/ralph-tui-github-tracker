@@ -10,5 +10,5 @@ import type { TrackerPluginFactory } from 'ralph-tui';
 export { GitHubTrackerPlugin } from './github-tracker.js';
 export type { GitHubIssue, RepoInfo } from './gh-client.js';
 
-const createGitHubTracker: TrackerPluginFactory = () => new GitHubTrackerPlugin();
+const createGitHubTracker = (() => new GitHubTrackerPlugin()) satisfies TrackerPluginFactory;
 export default createGitHubTracker;
