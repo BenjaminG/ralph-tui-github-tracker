@@ -461,6 +461,30 @@ mutation($issueId: ID!, $blockerId: ID!) {
 
 > **General rule:** When unsure about a GitHub GraphQL mutation's return payload fields, `clientMutationId` is always a safe fallback — it exists on every mutation payload type.
 
+### Unicode / encoding issues with inline GraphQL
+
+When passing GraphQL queries inline via `-f query='...'`, the `$` signs in variable declarations can get corrupted by shell or Unicode encoding issues, producing:
+
+```
+Expected VAR_SIGN, actual: UNKNOWN_CHAR ("") at [1, 22]
+```
+
+**Fix: Write the query to a temp file and use `-F query=@file`:**
+
+```bash
+cat > /tmp/blocked_by.graphql << 'GQLEOF'
+mutation($issueId: ID!, $blockerId: ID!) {
+  addBlockedBy(input: { issueId: $issueId, blockingIssueId: $blockerId }) {
+    clientMutationId
+  }
+}
+GQLEOF
+
+gh api graphql -F query=@/tmp/blocked_by.graphql -f issueId="<node-id>" -f blockerId="<node-id>"
+```
+
+> **When to use this:** If any inline `-f query='...'` call fails with `UNKNOWN_CHAR`, switch to the temp file approach. This is especially common when queries are constructed or interpolated programmatically.
+
 ---
 
 ## Differences from beads-rust
