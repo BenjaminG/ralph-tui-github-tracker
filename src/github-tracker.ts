@@ -4,7 +4,7 @@
  * and hierarchy (parent/subIssues). Authenticates via the gh CLI.
  */
 
-import { BaseTrackerPlugin } from 'ralph-tui';
+import { BaseTrackerPlugin } from './base-tracker.js';
 import type {
   TaskCompletionResult,
   TaskFilter,

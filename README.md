@@ -18,30 +18,20 @@ GitHub Issues tracker plugin for [ralph-tui](https://ralph-tui.com). Uses GitHub
 
 ## Installation
 
-### Option 1: Copy built file
-
 ```bash
-# Clone and build
-git clone https://github.com/BenjaminG/ralph-tui-github-tracker.git
-cd ralph-tui-github-tracker
-bun install && bun run build
-
-# Copy to ralph-tui plugins directory
-mkdir -p ~/.config/ralph-tui/plugins/trackers
-cp dist/index.js ~/.config/ralph-tui/plugins/trackers/github.js
+curl -fsSL https://raw.githubusercontent.com/BenjaminG/ralph-tui-github-tracker/main/install.sh | bash
 ```
 
-### Option 2: Install from npm (when published)
+To uninstall:
 
 ```bash
-npm install -g ralph-tui-github-tracker
-# Then copy the built file to the plugins directory
+curl -fsSL https://raw.githubusercontent.com/BenjaminG/ralph-tui-github-tracker/main/install.sh | bash -s -- --uninstall
 ```
 
 ### Install the skill (optional)
 
 ```bash
-ln -s "$(pwd)/skills/ralph-tui-create-github-issues" ~/.claude/skills/ralph-tui-create-github-issues
+npx skills add https://github.com/BenjaminG/ralph-tui-github-tracker --skill ralph-tui-create-github-issues -g
 ```
 
 ## Configuration

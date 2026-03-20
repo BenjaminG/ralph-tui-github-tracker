@@ -1,7 +1,10 @@
 /**
- * ABOUTME: Type declarations for ralph-tui tracker plugin interfaces.
- * These types match ralph-tui's exported plugin API. Sourced from
- * ralph-tui/src/plugins/trackers/types.ts and base.ts.
+ * ABOUTME: Ambient type declarations for the ralph-tui package.
+ * ralph-tui doesn't ship .d.ts files, so we declare its plugin API here.
+ * Synced from ralph-tui@0.11.0 src/plugins/trackers/types.ts
+ *
+ * If ralph-tui ships its own types in the future, delete this file —
+ * all imports already use `from 'ralph-tui'` and will resolve automatically.
  */
 
 declare module 'ralph-tui' {
@@ -73,13 +76,6 @@ declare module 'ralph-tui' {
     excludeIds?: string[];
   }
 
-  export interface TrackerPluginConfig {
-    name: string;
-    plugin: string;
-    default?: boolean;
-    options: Record<string, unknown>;
-  }
-
   export interface TrackerPluginMeta {
     id: string;
     name: string;
@@ -121,27 +117,4 @@ declare module 'ralph-tui' {
   }
 
   export type TrackerPluginFactory = () => TrackerPlugin;
-
-  export abstract class BaseTrackerPlugin implements TrackerPlugin {
-    abstract readonly meta: TrackerPluginMeta;
-    protected config: Record<string, unknown>;
-    protected ready: boolean;
-    initialize(config: Record<string, unknown>): Promise<void>;
-    isReady(): Promise<boolean>;
-    abstract getTasks(filter?: TaskFilter): Promise<TrackerTask[]>;
-    getTask(id: string): Promise<TrackerTask | undefined>;
-    getNextTask(filter?: TaskFilter): Promise<TrackerTask | undefined>;
-    abstract completeTask(id: string, reason?: string): Promise<TaskCompletionResult>;
-    abstract updateTaskStatus(id: string, status: TrackerTaskStatus): Promise<TrackerTask | undefined>;
-    isComplete(filter?: TaskFilter): Promise<boolean>;
-    sync(): Promise<SyncResult>;
-    isTaskReady(id: string): Promise<boolean>;
-    getEpics(): Promise<TrackerTask[]>;
-    getSetupQuestions(): SetupQuestion[];
-    validateSetup(answers: Record<string, unknown>): Promise<string | null>;
-    dispose(): Promise<void>;
-    getTemplate(): string;
-    protected filterTasks(tasks: TrackerTask[], filter?: TaskFilter): TrackerTask[];
-    protected checkTaskReady(task: TrackerTask, allTasks: TrackerTask[]): boolean;
-  }
 }

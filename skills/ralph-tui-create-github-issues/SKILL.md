@@ -118,7 +118,7 @@ When one issue is blocked by another, add the dependency:
 ```bash
 gh api graphql -f query='mutation($issueId: ID!, $blockerId: ID!) {
   addBlockedBy(input: { issueId: $issueId, blockingIssueId: $blockerId }) {
-    blockedByIssue { id }
+    clientMutationId
   }
 }' -f issueId="<blocked-node-id>" -f blockerId="<blocker-node-id>"
 ```
@@ -358,7 +358,7 @@ gh api graphql -f query='mutation($parentId: ID!, $childId: ID!) {
 # Add dependency: US-002 is blocked by US-001
 gh api graphql -f query='mutation($issueId: ID!, $blockerId: ID!) {
   addBlockedBy(input: { issueId: $issueId, blockingIssueId: $blockerId }) {
-    blockedByIssue { id }
+    clientMutationId
   }
 }' -f issueId="$US002_NODE_ID" -f blockerId="$US001_NODE_ID"
 
@@ -396,7 +396,7 @@ gh api graphql -f query='mutation($parentId: ID!, $childId: ID!) {
 # Add dependency: US-003 is blocked by US-002
 gh api graphql -f query='mutation($issueId: ID!, $blockerId: ID!) {
   addBlockedBy(input: { issueId: $issueId, blockingIssueId: $blockerId }) {
-    blockedByIssue { id }
+    clientMutationId
   }
 }' -f issueId="$US003_NODE_ID" -f blockerId="$US002_NODE_ID"
 ```
@@ -436,6 +436,30 @@ ralph-tui will:
 - [ ] Sub-issues linked via `addSubIssue` GraphQL mutation
 - [ ] "Blocked by #N" text included in issue bodies
 - [ ] Priority labels (`priority:N`) applied to all child issues
+
+---
+
+## Gotchas
+
+### `addBlockedBy` mutation return field
+
+The `AddBlockedByPayload` type does **not** have a `blockedByIssue` field. Using `blockedByIssue { id }` as the return selection will fail with:
+
+```
+Field 'blockedByIssue' doesn't exist on type 'AddBlockedByPayload'
+```
+
+**Use `clientMutationId` instead:**
+
+```graphql
+mutation($issueId: ID!, $blockerId: ID!) {
+  addBlockedBy(input: { issueId: $issueId, blockingIssueId: $blockerId }) {
+    clientMutationId
+  }
+}
+```
+
+> **General rule:** When unsure about a GitHub GraphQL mutation's return payload fields, `clientMutationId` is always a safe fallback — it exists on every mutation payload type.
 
 ---
 

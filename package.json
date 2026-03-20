@@ -5,14 +5,8 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    }
-  },
   "scripts": {
-    "build": "bun build src/index.ts --outdir dist --target node --format esm --external ralph-tui && bun run build:types",
+    "build": "bun build src/index.ts --outdir dist --target node --format esm && bun run build:types",
     "build:types": "tsc --emitDeclarationOnly",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
@@ -20,12 +14,6 @@
     "lint:fix": "eslint src/ tests/ --fix",
     "clean": "rm -rf dist"
   },
-  "files": [
-    "dist",
-    "skills",
-    "README.md",
-    "LICENSE"
-  ],
   "keywords": [
     "ralph-tui",
     "github",
