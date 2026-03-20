@@ -1,0 +1,43 @@
+{
+  "name": "ralph-tui-github-tracker",
+  "version": "0.1.0",
+  "description": "GitHub Issues tracker plugin for ralph-tui",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "bun build src/index.ts --outdir dist --target node --format esm && bun run build:types",
+    "build:types": "tsc --emitDeclarationOnly",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "lint": "eslint src/ tests/",
+    "lint:fix": "eslint src/ tests/ --fix",
+    "clean": "rm -rf dist"
+  },
+  "files": [
+    "dist",
+    "skills",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "ralph-tui",
+    "github",
+    "issues",
+    "tracker",
+    "plugin"
+  ],
+  "author": "BenjaminG",
+  "license": "MIT",
+  "devDependencies": {
+    "ralph-tui": "^0.11.0",
+    "typescript": "^5.7.0",
+    "@types/bun": "latest"
+  }
+}
