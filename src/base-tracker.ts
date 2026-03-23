@@ -42,6 +42,7 @@ export abstract class BaseTrackerPlugin implements TrackerPlugin {
       ...filter,
       status: ['open', 'in_progress'],
       ready: true,
+      type: 'task',
     };
 
     const tasks = await this.getTasks(mergedFilter);

@@ -1,11 +1,11 @@
 ---
 name: ralph-tui-create-github-issues
-description: "Convert PRDs to GitHub Issues for ralph-tui execution. Creates a parent issue (epic) with child issues for each user story, using native GitHub dependencies and sub-issues. Use when you have a PRD and want to use ralph-tui with GitHub Issues as the task source. Triggers on: create github issues, convert prd to github issues, github issues for ralph, ralph github issues."
+description: "Convert PRDs to GitHub Issues for ralph-tui execution. Creates one issue per user story with native GitHub dependencies and a feature label for grouping. Use when you have a PRD and want to use ralph-tui with GitHub Issues as the task source. Triggers on: create github issues, convert prd to github issues, github issues for ralph, ralph github issues."
 ---
 
 # Ralph TUI - Create GitHub Issues
 
-Converts PRDs to GitHub Issues (epic + child issues) for ralph-tui autonomous execution using **GitHub Issues** with native sub-issues and dependency tracking via the `gh` CLI and GraphQL API.
+Converts PRDs to flat GitHub Issues for ralph-tui autonomous execution using **GitHub Issues** with native dependency tracking via the `gh` CLI and GraphQL API. Issues are grouped by a `feature:<slug>` label.
 
 > **Note:** This skill uses GitHub Issues as the task tracker. If you prefer local-only tracking with beads-rust (`br`), use the `ralph-tui-create-beads-rust` skill instead.
 
@@ -15,11 +15,9 @@ Converts PRDs to GitHub Issues (epic + child issues) for ralph-tui autonomous ex
 
 Take a PRD (markdown file or text) and create GitHub Issues using `gh` commands:
 1. **Extract Quality Gates** from the PRD's "Quality Gates" section
-2. Create an **epic issue** for the feature (labeled `epic`)
-3. Create **child issues** for each user story (with quality gates appended)
-4. **Link child issues as sub-issues** of the epic via GraphQL `addSubIssue` mutation
-5. **Add native dependencies** between issues via GraphQL `addBlockedBy` mutation
-6. Output ready for `ralph-tui run --tracker github --epic <epic-issue-number>`
+2. Create **one issue per user story** (with quality gates appended), all sharing a `feature:<slug>` label
+3. **Add native dependencies** between issues via GraphQL `addBlockedBy` mutation
+4. Output ready for `ralph-tui run --tracker github --labels "feature:<slug>"`
 
 ---
 
@@ -50,23 +48,7 @@ Extract:
 
 Issues use `gh issue create` with **HEREDOC syntax** to safely handle special characters.
 
-### Creating the epic (parent issue)
-
-```bash
-gh issue create --title "[Feature Name]" --body "$(cat <<'EOF'
-[PRD overview/description]
-EOF
-)" --label "epic"
-```
-
-- Parse the issue number from the output URL (last path segment)
-- Get the node ID for GraphQL operations:
-
-```bash
-gh issue view <number> --json id --jq .id
-```
-
-### Creating child issues (one per user story)
+### Creating issues (one per user story)
 
 ```bash
 gh issue create --title "US-001: [Story Title]" --body "$(cat <<'EOF'
@@ -82,14 +64,12 @@ gh issue create --title "US-001: [Story Title]" --body "$(cat <<'EOF'
 ## Blocked by
 - Blocked by #<earlier-issue-number> (if any dependency)
 - Or "None - can start immediately"
-
-## Parent PRD
-#<epic-issue-number>
 EOF
-)" --label "priority:1"
+)" --label "feature:<slug>" --label "priority:1"
 ```
 
-- Get the node ID for each child issue:
+- Parse the issue number from the output URL (last path segment)
+- Get the node ID for GraphQL operations:
 
 ```bash
 gh issue view <number> --json id --jq .id
@@ -98,18 +78,6 @@ gh issue view <number> --json id --jq .id
 > **CRITICAL:** Always use `<<'EOF'` (single-quoted) for the HEREDOC delimiter. This prevents shell interpretation of backticks, `$variables`, and `()` in descriptions.
 
 ---
-
-### Linking child issues as sub-issues (GraphQL)
-
-After creating both the epic and child issues, link each child as a sub-issue of the epic:
-
-```bash
-gh api graphql -f query='mutation($parentId: ID!, $childId: ID!) {
-  addSubIssue(input: { issueId: $parentId, subIssueId: $childId }) {
-    issue { id }
-  }
-}' -f parentId="<epic-node-id>" -f childId="<child-node-id>"
-```
 
 ### Adding native dependencies (GraphQL)
 
@@ -124,6 +92,19 @@ gh api graphql -f query='mutation($issueId: ID!, $blockerId: ID!) {
 ```
 
 **Syntax:** The `issueId` is the issue that is blocked; the `blockingIssueId` is the blocker.
+
+---
+
+## Feature Label
+
+All issues from the same PRD share a `feature:<slug>` label for grouping. The slug should be a kebab-case summary of the feature name.
+
+Examples:
+- `feature:friends-outreach`
+- `feature:auth-middleware`
+- `feature:dashboard-filters`
+
+This label is how ralph-tui scopes which issues to work on.
 
 ---
 
@@ -210,7 +191,7 @@ Each issue's body should include acceptance criteria with:
 7. **Acceptance criteria**: Story criteria + quality gates appended
 8. **UI stories**: Also append UI-specific gates (browser verification)
 9. **Blocked by section**: Every issue body includes a "Blocked by" section referencing blocker issue numbers (or "None")
-10. **Parent PRD section**: Every child issue body references the epic issue number
+10. **Feature label**: Every issue gets the same `feature:<slug>` label
 
 ---
 
@@ -280,19 +261,6 @@ For UI stories, also include:
 **Output GitHub Issues:**
 
 ```bash
-# --- Create epic ---
-gh issue create --title "Friends Outreach Track" --body "$(cat <<'EOF'
-Warm outreach for deck feedback.
-
-Source PRD: ./tasks/friends-outreach-prd.md
-EOF
-)" --label "epic"
-
-# Parse issue number from output URL, e.g., https://github.com/owner/repo/issues/10
-# EPIC_NUMBER=10
-# Get epic node ID
-# EPIC_NODE_ID=$(gh issue view 10 --json id --jq .id)
-
 # --- US-001: No deps (first - creates schema) ---
 gh issue create --title "US-001: Add investorType field to investor table" --body "$(cat <<'EOF'
 ## Description
@@ -306,22 +274,12 @@ As a developer, I need to categorize investors as 'cold' or 'friend'.
 
 ## Blocked by
 None - can start immediately
-
-## Parent PRD
-#10
 EOF
-)" --label "priority:1"
+)" --label "feature:friends-outreach" --label "priority:1"
 
 # Parse issue number, e.g., #11
 # US001_NUMBER=11
 # US001_NODE_ID=$(gh issue view 11 --json id --jq .id)
-
-# Link as sub-issue of epic
-gh api graphql -f query='mutation($parentId: ID!, $childId: ID!) {
-  addSubIssue(input: { issueId: $parentId, subIssueId: $childId }) {
-    issue { id }
-  }
-}' -f parentId="$EPIC_NODE_ID" -f childId="$US001_NODE_ID"
 
 # --- US-002: UI story (gets browser verification too) ---
 gh issue create --title "US-002: Add type toggle to investor list rows" --body "$(cat <<'EOF'
@@ -338,22 +296,12 @@ As Ryan, I want to toggle investor type directly from the list.
 
 ## Blocked by
 - Blocked by #11
-
-## Parent PRD
-#10
 EOF
-)" --label "priority:2"
+)" --label "feature:friends-outreach" --label "priority:2"
 
 # Parse issue number, e.g., #12
 # US002_NUMBER=12
 # US002_NODE_ID=$(gh issue view 12 --json id --jq .id)
-
-# Link as sub-issue of epic
-gh api graphql -f query='mutation($parentId: ID!, $childId: ID!) {
-  addSubIssue(input: { issueId: $parentId, subIssueId: $childId }) {
-    issue { id }
-  }
-}' -f parentId="$EPIC_NODE_ID" -f childId="$US002_NODE_ID"
 
 # Add dependency: US-002 is blocked by US-001
 gh api graphql -f query='mutation($issueId: ID!, $blockerId: ID!) {
@@ -376,22 +324,12 @@ As Ryan, I want to filter the list to see just friends or cold.
 
 ## Blocked by
 - Blocked by #12
-
-## Parent PRD
-#10
 EOF
-)" --label "priority:3"
+)" --label "feature:friends-outreach" --label "priority:3"
 
 # Parse issue number, e.g., #13
 # US003_NUMBER=13
 # US003_NODE_ID=$(gh issue view 13 --json id --jq .id)
-
-# Link as sub-issue of epic
-gh api graphql -f query='mutation($parentId: ID!, $childId: ID!) {
-  addSubIssue(input: { issueId: $parentId, subIssueId: $childId }) {
-    issue { id }
-  }
-}' -f parentId="$EPIC_NODE_ID" -f childId="$US003_NODE_ID"
 
 # Add dependency: US-003 is blocked by US-002
 gh api graphql -f query='mutation($issueId: ID!, $blockerId: ID!) {
@@ -408,18 +346,17 @@ gh api graphql -f query='mutation($issueId: ID!, $blockerId: ID!) {
 After creation, run ralph-tui:
 
 ```bash
-# Work on a specific epic
-ralph-tui run --tracker github --epic <epic-issue-number>
+# Work on issues with a specific feature label
+ralph-tui run --tracker github --labels "feature:friends-outreach"
 
 # Or let it pick the best task automatically
 ralph-tui run --tracker github
 ```
 
 ralph-tui will:
-1. Work on issues within the specified epic (or select the best available task)
+1. Work on issues matching the label filter (or select the best available task)
 2. Close each issue when complete
-3. Close the epic when all children are done
-4. Output `<promise>COMPLETE</promise>` when epic is done
+3. Output `<promise>COMPLETE</promise>` when all issues are done
 
 ---
 
@@ -433,9 +370,9 @@ ralph-tui will:
 - [ ] Acceptance criteria are verifiable (not vague)
 - [ ] No story depends on a later story (only earlier stories)
 - [ ] Dependencies added via `addBlockedBy` GraphQL mutation
-- [ ] Sub-issues linked via `addSubIssue` GraphQL mutation
 - [ ] "Blocked by #N" text included in issue bodies
-- [ ] Priority labels (`priority:N`) applied to all child issues
+- [ ] Priority labels (`priority:N`) applied to all issues
+- [ ] All issues share the same `feature:<slug>` label
 
 ---
 
@@ -491,9 +428,8 @@ gh api graphql -F query=@/tmp/blocked_by.graphql -f issueId="<node-id>" -f block
 
 | Concept | beads-rust (`br`) | GitHub Issues (`gh`) |
 |---------|-------------------|----------------------|
-| Create epic | `br create --type=epic` | `gh issue create --label "epic"` |
-| Create story | `br create --parent=ID` | `gh issue create --label "priority:N"` |
-| Link parent-child | `--parent` flag on create | `addSubIssue` GraphQL mutation |
+| Create story | `br create --parent=ID` | `gh issue create --label "feature:<slug>" --label "priority:N"` |
+| Group issues | Epic parent (`--type=epic`) | `feature:<slug>` label |
 | Add dependency | `br dep add <issue> <blocker>` | `addBlockedBy` GraphQL mutation |
 | Get issue ID | Returned by `br create` | Parse URL + `gh issue view --json id` |
 | Close | `br close <id>` | `gh issue close <number>` |
